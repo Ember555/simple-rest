@@ -1,0 +1,29 @@
+version: "2"
+
+networks:
+  default:
+    external:
+      name: net_basic
+
+services:
+  simple-rest:
+    build: .
+    image: simple-rest:1.0
+    restart: always
+    container_name: simple-rest
+    ports:
+      - "8085:8085"
+  
+  mariadb:
+    container_name: mariadb
+    image: mariadb:${MARIADB_TAG}
+    restart: always
+    ports:
+      - '3306:3306'
+    env_file:
+      - ./data/env/mariadb
+      - ./data/env/timezone
+    volumes:
+      - ${DATA_PATH}/mariadb/lib/mysql:/var/lib/mysql
+      - ./data/mariadb/config/my.cnf:/etc/mysql/my.cnf
+      - ${DATA_PATH}/mariadb/log:/var/lib/mysql/log
