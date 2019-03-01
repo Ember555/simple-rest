@@ -7,23 +7,21 @@ networks:
 
 services:
   simple-rest:
-    build: .
-    image: simple-rest:1.0
+    build: ../
+    image: simple-rest:2.0
     restart: always
     container_name: simple-rest
     ports:
       - "8085:8085"
-  
-  mariadb:
-    container_name: mariadb
-    image: mariadb:${MARIADB_TAG}
-    restart: always
-    ports:
-      - '3306:3306'
-    env_file:
-      - ./data/env/mariadb
-      - ./data/env/timezone
-    volumes:
-      - ${DATA_PATH}/mariadb/lib/mysql:/var/lib/mysql
-      - ./data/mariadb/config/my.cnf:/etc/mysql/my.cnf
-      - ${DATA_PATH}/mariadb/log:/var/lib/mysql/log
+
+  # mongodb:
+  #   image: mongo:latest
+  #   container_name: "simple-mongodb"
+  #   environment:
+  #     - MONGO_DATA_DIR=/data/db
+  #     - MONGO_LOG_DIR=/dev/null
+  #   volumes:
+  #     - ./data/db:/data/db
+  #   ports:
+  #     - 27017:27017
+  #   command: mongod --smallfiles --logpath=/dev/null # --quiet

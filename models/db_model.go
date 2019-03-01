@@ -1,5 +1,9 @@
 package models
 
-type DBdata struct {
-	User string
+// PokemonModel is
+type PokemonModel struct {
+	ID      string
+	Name    string `bson:"name"`
+	Element string
+	Weight  string
 }

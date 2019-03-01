@@ -1,40 +1,46 @@
 package query
 
 import (
-	"database/sql"
 	"log"
-
 	"simple-rest/models"
+
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
-func initDB() *sql.DB {
-	db, err := sql.Open("mysql", "root:root@tcp(mariadb:3306)/wallet_localnetwork")
-	log.Println("Connect database")
+func initSession() *mgo.Session {
+	// session, err := mgo.Dial("mongodb://127.0.0.1:27017/pokemondb")
+	session, err := mgo.Dial("mongodb://simple-mongodb:27017/pokemondb")
 	if err != nil {
 		panic(err)
 	}
-	return db
+	return session
 }
 
-func QueryAll() *[]models.DBdata {
-	db := initDB()
-	defer db.Close()
+func QueryAll() *[]models.PokemonModel {
+	ss := initSession()
+	defer ss.Close()
+	ss.SetMode(mgo.Monotonic, true)
 
-	arrDdata := make([]models.DBdata, 0)
-	results, err := db.Query("SELECT participant FROM network_users;")
-	log.Println("Searching")
+	c := ss.DB("pokemondb").C("pokemons")
+	pokemons := []models.PokemonModel{}
+	err := c.Find(nil).All(&pokemons)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
+	return &pokemons
+}
 
-	for results.Next() {
-		var dbData models.DBdata
-		err = results.Scan(&dbData.User)
-		if err != nil {
-			panic(err.Error())
-		}
-		arrDdata = append(arrDdata, models.DBdata{User: dbData.User})
+func Query(name string) *models.PokemonModel {
+	ss := initSession()
+	defer ss.Close()
+	ss.SetMode(mgo.Monotonic, true)
+
+	c := ss.DB("pokemondb").C("pokemons")
+	pokemon := models.PokemonModel{}
+	err := c.Find(bson.M{"name": name}).One(&pokemon)
+	if err != nil {
+		log.Fatal(err)
 	}
-	log.Println("SearchParticipant Success")
-	return &arrDdata
+	return &pokemon
 }
