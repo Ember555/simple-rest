@@ -8,8 +8,8 @@ import (
 )
 
 func initRoute() {
-	http.HandleFunc("/search", route.SearchAll)
-	http.HandleFunc("/search/", route.SearchByName)
+	http.HandleFunc("/search", route.SearchByName)
+	http.HandleFunc("/create", route.Create)
 }
 
 func main() {

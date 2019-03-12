@@ -2,6 +2,7 @@ package query
 
 import (
 	"log"
+	"net/url"
 	"simple-rest/models"
 
 	"gopkg.in/mgo.v2"
@@ -31,16 +32,37 @@ func QueryAll() *[]models.PokemonModel {
 	return &pokemons
 }
 
-func Query(name string) *models.PokemonModel {
+func Query(queryString url.Values) *models.PokemonModel {
 	ss := initSession()
 	defer ss.Close()
 	ss.SetMode(mgo.Monotonic, true)
 
 	c := ss.DB("pokemondb").C("pokemons")
 	pokemon := models.PokemonModel{}
-	err := c.Find(bson.M{"name": name}).One(&pokemon)
+
+	if len(queryString) < 1 {
+		err := c.Find(nil).All(&pokemon)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return &pokemon
+	}
+
+	err := c.Find(bson.M{"name": queryString["name"][0]}).One(&pokemon)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return &pokemon
+}
+
+func Insert(body *models.PokemonModel) {
+	ss := initSession()
+	defer ss.Close()
+	ss.SetMode(mgo.Monotonic, true)
+
+	c := ss.DB("pokemondb").C("pokemons")
+	err := c.Insert(body)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
