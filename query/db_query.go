@@ -2,7 +2,6 @@ package query
 
 import (
 	"log"
-	"net/url"
 	"simple-rest/models"
 
 	"gopkg.in/mgo.v2"
@@ -10,15 +9,15 @@ import (
 )
 
 func initSession() *mgo.Session {
-	// session, err := mgo.Dial("mongodb://127.0.0.1:27017/pokemondb")
-	session, err := mgo.Dial("mongodb://simple-mongodb:27017/pokemondb")
+	session, err := mgo.Dial("mongodb://127.0.0.1:27017/pokemondb")
+	// session, err := mgo.Dial("mongodb://simple-mongodb:27017/pokemondb")
 	if err != nil {
 		panic(err)
 	}
 	return session
 }
 
-func QueryAll() *[]models.PokemonModel {
+func QueryAll() (*[]models.PokemonModel, error) {
 	ss := initSession()
 	defer ss.Close()
 	ss.SetMode(mgo.Monotonic, true)
@@ -27,12 +26,13 @@ func QueryAll() *[]models.PokemonModel {
 	pokemons := []models.PokemonModel{}
 	err := c.Find(nil).All(&pokemons)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
-	return &pokemons
+	return &pokemons, nil
 }
 
-func Query(queryString url.Values) *models.PokemonModel {
+func Query(queryString string) (*models.PokemonModel, error) {
 	ss := initSession()
 	defer ss.Close()
 	ss.SetMode(mgo.Monotonic, true)
@@ -40,22 +40,15 @@ func Query(queryString url.Values) *models.PokemonModel {
 	c := ss.DB("pokemondb").C("pokemons")
 	pokemon := models.PokemonModel{}
 
-	if len(queryString) < 1 {
-		err := c.Find(nil).All(&pokemon)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return &pokemon
-	}
-
-	err := c.Find(bson.M{"name": queryString["name"][0]}).One(&pokemon)
+	err := c.Find(bson.M{"_id": queryString}).One(&pokemon)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
-	return &pokemon
+	return &pokemon, nil
 }
 
-func Insert(body *models.PokemonModel) {
+func Insert(body *models.PokemonModel) error {
 	ss := initSession()
 	defer ss.Close()
 	ss.SetMode(mgo.Monotonic, true)
@@ -63,6 +56,38 @@ func Insert(body *models.PokemonModel) {
 	c := ss.DB("pokemondb").C("pokemons")
 	err := c.Insert(body)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return err
 	}
+	return nil
+}
+
+func Update(body *models.PokemonModel) error {
+	ss := initSession()
+	defer ss.Close()
+	ss.SetMode(mgo.Monotonic, true)
+
+	c := ss.DB("pokemondb").C("pokemons")
+	err := c.UpdateId(body.ID, body)
+	if err != nil {
+		log.Println("ID :", body.ID, err)
+		return err
+	}
+	return nil
+}
+
+//Remove(bson.M{"name": "Foo Bar"})
+
+func Delete(id string) error {
+	ss := initSession()
+	defer ss.Close()
+	ss.SetMode(mgo.Monotonic, true)
+
+	c := ss.DB("pokemondb").C("pokemons")
+	err := c.Remove(bson.M{"_id": id})
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
 }
