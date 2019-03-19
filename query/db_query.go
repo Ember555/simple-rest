@@ -76,8 +76,6 @@ func Update(body *models.PokemonModel) error {
 	return nil
 }
 
-//Remove(bson.M{"name": "Foo Bar"})
-
 func Delete(id string) error {
 	ss := initSession()
 	defer ss.Close()
@@ -85,6 +83,36 @@ func Delete(id string) error {
 
 	c := ss.DB("pokemondb").C("pokemons")
 	err := c.Remove(bson.M{"_id": id})
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func SignUp(body *models.UserModel) error {
+	ss := initSession()
+	defer ss.Close()
+	ss.SetMode(mgo.Monotonic, true)
+
+	c := ss.DB("pokemondb").C("user")
+	err := c.Insert(body)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func Signin(username string, password string) error {
+	ss := initSession()
+	defer ss.Close()
+	ss.SetMode(mgo.Monotonic, true)
+
+	c := ss.DB("pokemondb").C("user")
+	user := models.UserModel{}
+
+	err := c.Find(bson.M{"username": username, "password": password}).One(&user)
 	if err != nil {
 		log.Println(err)
 		return err
