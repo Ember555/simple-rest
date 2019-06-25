@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"simple-rest/models"
-	"time"
-
 	"simple-rest/query"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
