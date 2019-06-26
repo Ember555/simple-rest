@@ -12,3 +12,12 @@ type UserModel struct {
 	Username string `bson:"username" json:"username"`
 	Password string `bson:"password" json:"password"`
 }
+
+type DBConfig struct {
+	Host          string
+	Username      string
+	Pass          string
+	DB            string
+	PokeColletion string
+	UserColletion string
+}

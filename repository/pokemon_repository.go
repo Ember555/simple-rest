@@ -4,8 +4,8 @@ import (
 	"log"
 	"simple-rest/models"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type pokemonRepo struct {

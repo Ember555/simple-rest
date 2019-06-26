@@ -1,10 +1,10 @@
-package route
+package pokemon
 
 import (
 	"encoding/json"
 	"net/http"
 	"simple-rest/models"
-	"simple-rest/query"
+	"simple-rest/repository"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -22,6 +22,26 @@ func SetHeader(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Cache-Control")
+}
+
+type Handler struct {
+	pokemonRepos repository.PokemonRepository
+	userRepos    repository.UserRepository
+}
+
+func NewHandler(pokemonRepos repository.PokemonRepository, userRepos repository.UserRepository) (*Handler, error) {
+	return &Handler{pokemonRepos, userRepos}, nil
+}
+
+func (h *Handler) Handle(r *mux.Router) {
+	r.HandleFunc("/search", h.SearchAll).Methods("GET")
+	r.HandleFunc("/search/id/{id}", h.SearchByName).Methods("GET")
+	r.HandleFunc("/create", h.Create).Methods("POST")
+	r.HandleFunc("/update", h.Update).Methods("POST")
+	r.HandleFunc("/delete/id/{id}", h.Delete).Methods("POST")
+
+	r.HandleFunc("/signup", h.Signup).Methods("POST")
+	r.HandleFunc("/signin", h.Signin).Methods("POST")
 }
 
 func Authen(w http.ResponseWriter, r *http.Request) error {
@@ -56,7 +76,7 @@ func Authen(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func SearchAll(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SearchAll(w http.ResponseWriter, r *http.Request) {
 	SetHeader(w)
 	err := Authen(w, r)
 	if err != nil {
@@ -64,7 +84,7 @@ func SearchAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := query.QueryAll()
+	result, err := h.pokemonRepos.QueryAll()
 	if err != nil {
 		http.Error(w, "Search Fail", http.StatusBadRequest)
 		return
@@ -74,7 +94,7 @@ func SearchAll(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func SearchByName(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SearchByName(w http.ResponseWriter, r *http.Request) {
 	SetHeader(w)
 	err := Authen(w, r)
 	if err != nil {
@@ -83,7 +103,7 @@ func SearchByName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	result, err := query.Query(params["id"])
+	result, err := h.pokemonRepos.Query(params["id"])
 	if err != nil {
 		http.Error(w, "Search Fail", http.StatusBadRequest)
 		return
@@ -93,7 +113,7 @@ func SearchByName(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Create(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	SetHeader(w)
 	err := Authen(w, r)
 	if err != nil {
@@ -107,7 +127,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	err = query.Insert(&data)
+	err = h.pokemonRepos.Insert(&data)
 	if err != nil {
 		http.Error(w, "Create Fail", http.StatusBadRequest)
 		return
@@ -119,7 +139,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Update(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	SetHeader(w)
 	err := Authen(w, r)
 	if err != nil {
@@ -133,7 +153,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	err = query.Update(&data)
+	err = h.pokemonRepos.Update(&data)
 	if err != nil {
 		http.Error(w, "Update Fail", http.StatusBadRequest)
 		return
@@ -143,7 +163,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func Delete(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	SetHeader(w)
 	err := Authen(w, r)
 	if err != nil {
@@ -152,7 +172,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	err = query.Delete(params["id"])
+	err = h.pokemonRepos.Delete(params["id"])
 	if err != nil {
 		http.Error(w, "Delete Fail", http.StatusBadRequest)
 		return
@@ -163,7 +183,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func Signup(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	SetHeader(w)
 
 	var data models.UserModel
@@ -172,7 +192,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	err := query.SignUp(&data)
+	err := h.userRepos.SignUp(&data)
 	if err != nil {
 		http.Error(w, "Sign up Fail", http.StatusBadRequest)
 		return
@@ -184,7 +204,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Signin(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Signin(w http.ResponseWriter, r *http.Request) {
 	var creds models.UserModel
 
 	err := json.NewDecoder(r.Body).Decode(&creds)
@@ -193,7 +213,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = query.Signin(creds.Username, creds.Password)
+	err = h.userRepos.Signin(creds.Username, creds.Password)
 	if err != nil {
 		http.SetCookie(w, &http.Cookie{
 			Name:  "token",
