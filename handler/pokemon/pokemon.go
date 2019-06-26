@@ -134,9 +134,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode("Create Success")
 	return
-
-	http.Error(w, "Not Found", http.StatusNotFound)
-	return
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
